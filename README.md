@@ -4,6 +4,8 @@
 
 CoverBot is a tool that automatically generates tailored cover letters based on your resume and job descriptions. Simply paste a job description into the application, and CoverBot will create a customized cover letter highlighting your relevant experience and skills.
 
+Forked from [CoverBot](https://github.com/mcphail-alex/CoverBot)
+
 ## Setup
 
 1. Place your resume as a `.doc` file in the `/server/data` directory
@@ -11,13 +13,14 @@ CoverBot is a tool that automatically generates tailored cover letters based on 
    ```
    OPENAI_API_KEY=your_api_key_here
    ```
-3. Start the application
-4. Paste a job description into the input window
-5. The tool will generate a personalized cover letter that you can copy from the output window
+3. Customize your signature in openaiController.ts
+4. Start the application
+5. Paste a job description into the input window
+6. The tool will generate a personalized cover letter that you can copy from the output window
 
 ## Usage
 
-1. Open the application in your browser
+1. Open the application in your browser at `http://localhost:8080/`
 2. In the job description field, paste the complete job listing text
 3. Click "Generate Cover Letter"
 4. Review the generated cover letter in the output window
@@ -42,7 +45,7 @@ CoverBot is a tool that automatically generates tailored cover letters based on 
 - Fork and clone this repo
 - Add your resume and OpenAI API key as described in the setup section
 - Install dependencies with `npm install`
-- Start the development server with `npm run dev`
+- Start the development server with `npm run start`
 
 ### Contributing
 

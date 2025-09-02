@@ -16,6 +16,11 @@ body {
   min-height: 100vh;
 }
 
+/* Header Styles */
+header {
+  padding-bottom: 1rem;
+}
+
 /* Container Styles */
 .container {
   max-width: 1200px;
@@ -43,6 +48,7 @@ textarea {
   border-radius: 5px;
   padding: 15px;
   font-size: 1rem;
+  min-height: 25vh;
   resize: vertical;
   outline: none;
 }
@@ -76,7 +82,7 @@ button:disabled {
 .error {
   color: #ff4d4f;
   font-weight: bold;
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
 /* Result Section */
@@ -85,9 +91,9 @@ button:disabled {
   padding: 15px;
   text-align: left;
   background-color: white;
-  border-left: 5px solid #246aff;
+  /* border-left: 5px solid #246aff; */
   border-radius: 5px;
-  color: black
+  color: #0d141d;
 }
 
 .result h2 {
@@ -95,7 +101,19 @@ button:disabled {
 }
 
 .result pre {
-  color: black;
+  color: #0d141d;
+}
+
+.result button {
+  display: block;
+  margin-left: auto;
+  margin-top: 1rem;
+}
+
+.result-loader {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
 }
 
 pre {
