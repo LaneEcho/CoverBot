@@ -3,6 +3,7 @@ import { ServerError } from '../types';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import { PDFParse } from 'pdf-parse';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,8 +43,12 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
   `;
 
   // Read resume from file
-  const resumeFilePath = path.join(__dirname, '../data/resume.doc');
-  const resume = fs.readFileSync(resumeFilePath, 'utf-8');
+  const resumeFilePath = path.join(__dirname, '../data/resume.pdf');
+
+  // Parse PDF
+  const parser = new PDFParse({ url: resumeFilePath });
+  const result = await parser.getText();
+  await parser.destroy();
 
   const rules = `
   1. output format should be in markdown formatted left justified, single spaced with 2 lines between paragraphs and after the salutation. Like a letter 
@@ -57,7 +62,7 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
   ${role}
   ${task}
 
-  ${resume}
+  ${result.text}
 
   Rules: 
   ${rules}
@@ -78,12 +83,9 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
     const response = await client.responses.create({
       model: 'gpt-5-nano',
       input: systemPrompt,
-      // temperature: 0.3,
     });
 
     const returnedQuery = response.output_text;
-
-    console.log(returnedQuery, typeof returnedQuery);
 
     if (!returnedQuery) {
       const error: ServerError = {

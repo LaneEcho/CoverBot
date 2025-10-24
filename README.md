@@ -8,7 +8,7 @@ Forked from [CoverBot](https://github.com/mcphail-alex/CoverBot)
 
 ## Setup
 
-1. Place your resume as a `.doc` file in the `/server/data` directory
+1. Place your resume as a `.pdf` file in the `/server/data` directory
 2. Create a `.env` file in the root directory with your OpenAI API key:
    ```
    OPENAI_API_KEY=your_api_key_here
