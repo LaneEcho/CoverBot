@@ -11,6 +11,7 @@ const client = new OpenAI({ apiKey: process.env.OPEN_AI_KEY });
 
 export const queryOpenAI: RequestHandler = async (_req, res, next) => {
   const { naturalLanguageQuery } = res.locals;
+
   if (!naturalLanguageQuery) {
     const error: ServerError = {
       log: 'OpenAI query middleware did not receive a query',
@@ -67,28 +68,22 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
 
   // Read and update the queries.json file
   let queriesData: Record<string, Array<{ returnedQuery: string }>> = {};
+
   if (fs.existsSync(queriesFilePath)) {
     const fileContent = fs.readFileSync(queriesFilePath, 'utf-8');
     queriesData = fileContent ? JSON.parse(fileContent) : {};
   }
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.responses.create({
       model: 'gpt-5-nano',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        { role: 'user', content: naturalLanguageQuery },
-      ],
-      temperature: 0.3,
-      max_completion_tokens: 500,
+      input: systemPrompt,
+      // temperature: 0.3,
     });
 
-    const returnedQuery = response.choices[0].message.content
-      ? response.choices[0].message.content
-      : null;
+    const returnedQuery = response.output_text;
+
+    console.log(returnedQuery, typeof returnedQuery);
 
     if (!returnedQuery) {
       const error: ServerError = {
@@ -112,7 +107,8 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
       'utf-8'
     );
 
-    res.locals.coverLetter = returnedQuery;
+    res.locals.coverLetter = returnedQuery; // save to response object
+
     return next();
   } catch (err) {
     const error: ServerError = {
