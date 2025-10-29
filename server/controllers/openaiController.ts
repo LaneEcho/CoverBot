@@ -3,6 +3,7 @@ import { ServerError } from '../types';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import { PDFParse } from 'pdf-parse';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +12,7 @@ const client = new OpenAI({ apiKey: process.env.OPEN_AI_KEY });
 
 export const queryOpenAI: RequestHandler = async (_req, res, next) => {
   const { naturalLanguageQuery } = res.locals;
+
   if (!naturalLanguageQuery) {
     const error: ServerError = {
       log: 'OpenAI query middleware did not receive a query',
@@ -20,14 +22,17 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
     return next(error);
   }
 
-  const role = `You're an expert job search consultant who is helping a client seek a new tech role`;
+  const role =
+    'You are a cover letter generator. Your task is to create conversational and concise cover letters.';
 
   // UPDATE SIGNATURE HERE
   const task = `
+
         The user content will be a job description.  
-        1. read through the job description and identify the target audience, key skills and company values
-        2. read through the resume provided below and find relevant experience to the job description
-        3. format a cover letter for the candidate in the following structure:
+
+        To compose a compelling cover letter, you must scrutinise the job description for key qualifications. Begin with a succinct introduction about the candidate's identity and career goals. Highlight skills aligned with the job, underpinned by tangible examples. Incorporate details about the company, emphasising its mission or unique aspects that align with the candidate's values. Conclude by reaffirming the candidate's suitability, inviting further discussion. Use job-specific terminology for a tailored and impactful letter, maintaining a professional style suitable for a the job role. Please provide your response in under 350 words.
+
+        Format a cover letter for the candidate in the following structure:
 
         Dear [target audience],
 
@@ -41,22 +46,30 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
   `;
 
   // Read resume from file
-  const resumeFilePath = path.join(__dirname, '../data/resume.doc');
-  const resume = fs.readFileSync(resumeFilePath, 'utf-8');
+  const resumeFilePath = path.join(__dirname, '../data/resume.pdf');
+
+  // Parse PDF
+  const parser = new PDFParse({ url: resumeFilePath });
+  const result = await parser.getText();
+  await parser.destroy();
 
   const rules = `
-  1. output format should be in markdown formatted left justified, single spaced with 2 lines between paragraphs and after the salutation. Like a letter 
+  1. Output format should be in markdown formatted left justified, single spaced with 2 lines between paragraphs and after the salutation. Like a letter 
   2. It should not include ANY additional content than the cover letter itself          
-  3. don't lie or make up any experience to better fit the job description, only use the experience listed and what can be logically inferred from that experience
-  4. don't directly quote anything from the job description.  If you want to tie a link between experience and job requirements, at least change the wording enough so its not a direct pull
-  5. Please provide your response in under 300 words.
+  3. Don't lie or make up any experience to better fit the job description, only use the experience listed and what can be logically inferred from that experience
+  4. Don't directly quote anything from the job description. If you want to tie a link between experience and job requirements, change the wording enough so it is not a direct pull
 `;
 
   const systemPrompt = `
   ${role}
+
   ${task}
 
-  ${resume}
+  Job Description:
+  ${naturalLanguageQuery}
+
+  Resume:
+  ${result.text}
 
   Rules: 
   ${rules}
@@ -67,28 +80,21 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
 
   // Read and update the queries.json file
   let queriesData: Record<string, Array<{ returnedQuery: string }>> = {};
+
   if (fs.existsSync(queriesFilePath)) {
     const fileContent = fs.readFileSync(queriesFilePath, 'utf-8');
     queriesData = fileContent ? JSON.parse(fileContent) : {};
   }
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.responses.create({
       model: 'gpt-5-nano',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        { role: 'user', content: naturalLanguageQuery },
-      ],
-      temperature: 0.3,
-      max_completion_tokens: 500,
+      reasoning: { effort: 'low' }, // could also try medium
+      instructions: 'Responses must be conversational but professional',
+      input: systemPrompt,
     });
 
-    const returnedQuery = response.choices[0].message.content
-      ? response.choices[0].message.content
-      : null;
+    const returnedQuery = response.output_text;
 
     if (!returnedQuery) {
       const error: ServerError = {
@@ -112,7 +118,8 @@ export const queryOpenAI: RequestHandler = async (_req, res, next) => {
       'utf-8'
     );
 
-    res.locals.coverLetter = returnedQuery;
+    res.locals.coverLetter = returnedQuery; // save to response object
+
     return next();
   } catch (err) {
     const error: ServerError = {
